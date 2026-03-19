@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Irish Budget Microworld</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+
+  <!-- ===== START SCREEN ===== -->
+  <div id="start-screen">
+    <div class="start-harp">🏛️</div>
+    <h1>Irish Budget<br>Microworld</h1>
+    <p>You are the Minister for Finance.<br>Build Ireland's Budget for 2026.</p>
+    <form id="name-form">
+      <input type="text" id="player-name" placeholder="Enter your name" required />
+      <button type="submit">Begin</button>
+    </form>
+  </div>
+
+  <!-- ===== GAME SCREEN WRAPPER ===== -->
+  <div id="game-screen" style="display:none;">
+
+    <div id="welcome-flash" style="display:none;"><h1>Welcome, Minister!</h1></div>
+
+    <!-- ===== LEVEL INTRO OVERLAY ===== -->
+    <div id="level-intro-overlay" style="display:none;">
+      <div class="intro-card" id="intro-card-content"></div>
+    </div>
+
+    <!-- ===== TAX PHASE OVERLAY ===== -->
+    <div id="tax-phase-overlay" style="display:none;">
+      <div class="tax-phase-card">
+        <div class="intro-badge">Phase 1 · Revenue</div>
+        <h2>Set Tax Policy</h2>
+        <p class="tax-phase-desc">Before allocating spending, decide where the money comes from.</p>
+        <div id="tax-sliders"></div>
+        <div class="tax-summary">
+          <div class="tax-summary-row"><span>Base Budget</span><span>€133.3Bn</span></div>
+          <div class="tax-summary-row" id="tax-revenue-row"><span>Revenue Change</span><span id="tax-revenue-val">+€0.0Bn</span></div>
+          <div class="tax-summary-row tax-summary-total"><span>Your Budget Envelope</span><span id="tax-total-val">€133.3Bn</span></div>
+          <div class="tax-effects-preview" id="tax-effects-preview"></div>
+        </div>
+        <button class="intro-start-btn" id="tax-confirm-btn">Confirm Tax Policy & Proceed ▶</button>
+      </div>
+    </div>
+
+    <!-- ===== EVENT OVERLAY ===== -->
+    <div id="event-overlay" style="display:none;">
+      <div class="event-card">
+        <div class="event-badge">⚡ Breaking News</div>
+        <h2 id="event-title"></h2>
+        <p id="event-desc"></p>
+        <div id="event-choices"></div>
+      </div>
+    </div>
+
+    <!-- ===== LEVEL SELECT ===== -->
+    <div id="level-select-container" style="display:none;">
+      <div class="level-select">
+        <div class="level-select-title">
+          <div class="title-harp">🏛️</div>
+          <h1>Irish Budget Microworld</h1>
+          <h2>Select a Level</h2>
+        </div>
+        <div class="level-row">
+          <button class="level-btn" data-level="1">
+            <span class="level-num">01</span>
+            <span class="level-info"><span class="level-name">The Basics — Allocate the Budget</span><span class="level-desc">Learn to pick policies and see their consequences</span></span>
+            <span class="btn-best-time"></span>
+          </button>
+          <button class="redo-level-btn" data-level="1" style="display:none;">↺ Redo</button>
+        </div>
+        <div class="level-row">
+          <button class="level-btn locked" data-level="2" disabled>
+            <span class="level-num">02</span>
+            <span class="level-info"><span class="level-name">Competing Demands</span><span class="level-desc">Harder trade-offs, negative effects, and unexpected crises</span></span>
+            <span class="btn-best-time"></span>
+          </button>
+          <button class="redo-level-btn" data-level="2" style="display:none;">↺ Redo</button>
+        </div>
+        <div class="level-row">
+          <button class="level-btn locked" data-level="3" disabled>
+            <span class="level-num">03</span>
+            <span class="level-info"><span class="level-name">Budget Day — Full Challenge</span><span class="level-desc">Set taxes, allocate spending, and survive economic shocks</span></span>
+            <span class="btn-best-time"></span>
+          </button>
+          <button class="redo-level-btn" data-level="3" style="display:none;">↺ Redo</button>
+        </div>
+        <div class="level-row">
+          <button id="results-summary-btn">📊 View Results</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== LEVEL SCREEN ===== -->
+    <div id="level-screen" style="display:none;">
+
+      <!-- Header -->
+      <div class="level-header">
+        <h2 id="level-title">Level</h2>
+        <div class="budget-bar-wrap">
+          <span class="budget-bar-label">Budget <strong id="budget-total-label">€133.3Bn</strong></span>
+          <div class="budget-bar-track"><div class="budget-bar-fill" id="budget-bar-fill"></div></div>
+          <span class="budget-bar-remaining" id="budget-bar-remaining">€5.5Bn left</span>
+        </div>
+        <div class="header-actions">
+          <span id="timer">00:00</span>
+          <button id="header-reset-btn">↺ Reset</button>
+          <button id="header-home-btn">✕ Exit</button>
+        </div>
+      </div>
+
+      <!-- ===== THREE-PANEL LAYOUT ===== -->
+      <div class="game-layout">
+
+        <!-- LEFT: Charts -->
+        <div class="panel-left">
+          <div class="card">
+            <h3 class="card-title">Budget Distribution <span class="chart-hint">(click a sector)</span></h3>
+            <div class="pie-wrap"><canvas id="spendChart"></canvas></div>
+          </div>
+          <div class="card">
+            <h3 class="card-title">Budget Comparison</h3>
+            <div class="bar-wrap"><canvas id="barChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- CENTER: Sector grid OR Policy cards -->
+        <div class="panel-center">
+          <div id="center-sector-view">
+            <h3 class="card-title" style="margin-bottom:10px;">Sector Breakdown</h3>
+            <div class="sector-grid" id="sector-grid"></div>
+          </div>
+          <div id="center-policy-view" style="display:none;">
+            <div class="policy-view-header">
+              <button class="back-btn" id="back-btn">← All Sectors</button>
+              <div class="policy-view-title-wrap">
+                <span class="policy-view-icon" id="pv-icon"></span>
+                <div>
+                  <h3 class="policy-view-title" id="pv-title"></h3>
+                  <p class="policy-view-subtitle" id="pv-subtitle"></p>
+                </div>
+              </div>
+            </div>
+            <div class="policy-grid" id="policy-grid"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Goals sidebar -->
+        <div class="panel-right">
+          <div class="goals-panel">
+            <h3 class="goals-panel-title" id="goals-panel-title">Level 1 Goals</h3>
+            <div id="goals-panel-items"></div>
+            <div class="goals-panel-divider"></div>
+            <div class="goals-panel-scores">
+              <div class="gp-score-row" id="gps-economy"><span class="gp-score-icon">📈</span><span class="gp-score-label">Economy</span><span class="gp-score-val" id="gpv-economy">10</span></div>
+              <div class="gp-score-row" id="gps-social"><span class="gp-score-icon">🤝</span><span class="gp-score-label">Social</span><span class="gp-score-val" id="gpv-social">10</span></div>
+              <div class="gp-score-row" id="gps-housing"><span class="gp-score-icon">🏠</span><span class="gp-score-label">Housing</span><span class="gp-score-val" id="gpv-housing">5</span></div>
+              <div class="gp-score-row" id="gps-approval" style="display:none;"><span class="gp-score-icon">👥</span><span class="gp-score-label">Approval</span><span class="gp-score-val" id="gpv-approval">30</span></div>
+            </div>
+            <div class="goals-panel-divider"></div>
+            <div class="gp-changes-row">
+              <span>Policy changes made</span>
+              <span id="gp-changes-count">0</span>
+            </div>
+            <div class="gp-penalty-note" id="gp-penalty-note" style="display:none;">
+              Reversal penalty: <strong>€50M</strong> per deselection
+            </div>
+            <button id="submit-level-btn" disabled>✔ Submit Budget</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- (pause overlay removed — using header reset/exit buttons instead) -->
+
+      <!-- Consequence Report -->
+      <div id="consequence-overlay" style="display:none;">
+        <div class="consequence-card">
+          <div class="event-badge" style="background:rgba(255,180,0,0.12);border-color:rgba(255,180,0,0.3);color:#ffcc44;">📰 Six Months Later…</div>
+          <h2>The Consequences of Your Budget</h2>
+          <div id="consequence-body"></div>
+          <button class="intro-start-btn" id="consequence-continue-btn">Continue</button>
+        </div>
+      </div>
+
+      <!-- Level complete -->
+      <div id="level-complete-overlay" style="display:none;">
+        <div class="level-complete-card">
+          <h2 id="level-complete-title">Level Complete!</h2>
+          <p id="level-complete-body"></p>
+          <button id="view-level-btn">View My Budget</button>
+          <button id="redo-btn">Try Again</button>
+          <button id="close-level-complete-btn">Level Select</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results overlay -->
+    <div id="results-overlay" style="display:none;">
+      <div class="results-inner">
+        <h2 style="margin:0 0 16px; text-align:center;">📊 Your Results</h2>
+        <div id="results-body"></div>
+        <button id="results-close-btn">Close</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
